@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WilliamDYX</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* 背景动态光斑 */
+        body::before,
+        body::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.4;
+            z-index: 0;
+        }
+
+        body::before {
+            width: 500px;
+            height: 500px;
+            background: #7f5af0;
+            top: -100px;
+            left: -100px;
+            animation: float1 8s ease-in-out infinite;
+        }
+
+        body::after {
+            width: 400px;
+            height: 400px;
+            background: #2cb67d;
+            bottom: -80px;
+            right: -80px;
+            animation: float2 10s ease-in-out infinite;
+        }
+
+        @keyframes float1 {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(80px, 60px); }
+        }
+
+        @keyframes float2 {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-60px, -80px); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 50px 40px;
+            max-width: 560px;
+            width: 90%;
+        }
+
+        .avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #7f5af0, #2cb67d);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 24px;
+            font-size: 42px;
+            color: #fff;
+            font-weight: bold;
+            box-shadow: 0 0 40px rgba(127, 90, 240, 0.4);
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 40px rgba(127, 90, 240, 0.4); }
+            50% { box-shadow: 0 0 60px rgba(127, 90, 240, 0.7); }
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #fffffe;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: #94a1b2;
+            margin-bottom: 40px;
+        }
+
+        .nav-title {
+            font-size: 0.85rem;
+            color: #72757e;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+        }
+
+        .card-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 20px 24px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            text-decoration: none;
+            color: #fffffe;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(127, 90, 240, 0.5);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(127, 90, 240, 0.2);
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .card:nth-child(1) .card-icon { background: linear-gradient(135deg, #e53170, #ff6b6b); }
+        .card:nth-child(2) .card-icon { background: linear-gradient(135deg, #7f5af0, #a78bfa); }
+        .card:nth-child(3) .card-icon { background: linear-gradient(135deg, #2cb67d, #34d399); }
+
+        .card-info {
+            text-align: left;
+        }
+
+        .card-info h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .card-info p {
+            font-size: 0.85rem;
+            color: #94a1b2;
+        }
+
+        .card-arrow {
+            margin-left: auto;
+            font-size: 1.2rem;
+            color: #72757e;
+            transition: transform 0.3s ease, color 0.3s ease;
+        }
+
+        .card:hover .card-arrow {
+            transform: translateX(4px);
+            color: #7f5af0;
+        }
+
+        footer {
+            position: fixed;
+            bottom: 20px;
+            color: #72757e;
+            font-size: 0.8rem;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="avatar">W</div>
+        <h1>WilliamDYX</h1>
+        <p class="subtitle">欢迎来到我的 GitHub Pages 🎮</p>
+        <h1>小游戏</h1>
+
+        <p class="nav-title">页面导航</p>
+
+        <div class="card-grid">
+            <a href="minesweeper.html" class="card">
+                <div class="card-icon">💣</div>
+                <div class="card-info">
+                    <h3>扫雷</h3>
+                    <p>经典扫雷游戏，挑战你的推理能力</p>
+                </div>
+                <span class="card-arrow">→</span>
+            </a>
+
+            <a href="five_in_a_row.html" class="card">
+                <div class="card-icon">⚫</div>
+                <div class="card-info">
+                    <h3>五子棋</h3>
+                    <p>与好友对弈，五子连珠即获胜</p>
+                </div>
+                <span class="card-arrow">→</span>
+            </a>
+
+            <a href="tetris.html" class="card">
+                <div class="card-icon">🧱</div>
+                <div class="card-info">
+                    <h3>俄罗斯方块</h3>
+                    <p>经典方块消除，考验反应与策略</p>
+                </div>
+                <span class="card-arrow">→</span>
+            </a>
+        </div>
+    </div>
+
+    <footer>© 2026 WilliamDYX</footer>
+</body>
+</html>
