@@ -1,1 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📚 作业详情 - 蛤蟆集团</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+        /* 背景动态光斑 */
+        body::before, body::after {
+            content: ''; position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.4; z-index: 0;
+        }
+        body::before { width: 500px; height: 500px; background: #7f5af0; top: -100px; left: -100px; animation: float1 8s ease-in-out infinite; }
+        body::after { width: 400px; height: 400px; background: #2cb67d; bottom: -80px; right: -80px; animation: float2 10s ease-in-out infinite; }
+        @keyframes float1 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(80px, 60px); } }
+        @keyframes float2 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-60px, -80px); } }
 
+        .container { position: relative; z-index: 1; text-align: center; padding: 40px; max-width: 600px; width: 90%; }
+        
+        /* 返回按钮 */
+        .back-btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            color: #94a1b2; text-decoration: none; font-size: 0.9rem;
+            margin-bottom: 20px; transition: color 0.3s;
+        }
+        .back-btn:hover { color: #fffffe; }
+
+        h1 { font-size: 2rem; font-weight: 700; color: #fffffe; margin-bottom: 30px; }
+
+        .card-grid { display: flex; flex-direction: column; gap: 16px; }
+        
+        .card {
+            display: flex; align-items: center; gap: 16px;
+            padding: 20px 24px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        .card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(127, 90, 240, 0.5);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(127, 90, 240, 0.2);
+        }
+
+        .card-icon {
+            width: 48px; height: 48px; border-radius: 12px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 24px; flex-shrink: 0;
+            background: linear-gradient(135deg, #e53170, #ff6b6b);
+        }
+
+        .card-info { text-align: left; flex: 1; }
+        .card-info h3 { font-size: 1.1rem; font-weight: 600; color: #fffffe; margin-bottom: 4px; }
+        .card-info p { font-size: 0.85rem; color: #94a1b2; }
+        
+        .status {
+            font-size: 0.75rem; padding: 4px 8px; border-radius: 20px;
+            background: rgba(127, 90, 240, 0.2); color: #a78bfa;
+        }
+
+        /* 弹窗样式 */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px);
+            z-index: 100; display: none; justify-content: center; align-items: center;
+            opacity: 0; transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        
+        .modal-content {
+            background: #1a1a2e; border: 1px solid rgba(255,255,255,0.1);
+            width: 90%; max-width: 500px; padding: 30px; border-radius: 20px;
+            transform: scale(0.9); transition: transform 0.3s ease;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .modal-overlay.active .modal-content { transform: scale(1); }
+
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-title { font-size: 1.5rem; color: #fffffe; }
+        .close-btn {
+            background: none; border: none; color: #94a1b2; font-size: 1.5rem;
+            cursor: pointer; transition: color 0.3s;
+        }
+        .close-btn:hover { color: #fff; }
+
+        .modal-body { color: #cbd5e1; line-height: 1.6; font-size: 1rem; }
+        .modal-footer { margin-top: 20px; text-align: right; }
+        .confirm-btn {
+            background: linear-gradient(135deg, #7f5af0, #2cb67d);
+            color: white; border: none; padding: 10px 24px; border-radius: 8px;
+            cursor: pointer; font-weight: 600; transition: opacity 0.3s;
+        }
+        .confirm-btn:hover { opacity: 0.9; }
+
+        footer { position: fixed; bottom: 20px; color: #72757e; font-size: 0.8rem; z-index: 1; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-btn">← 返回首页</a>
+        <h1>📚 作业列表</h1>
+
+        <div class="card-grid">
+            <!-- 作业卡片 1 -->
+            <div class="card" onclick="openModal('前端开发基础', '完成HTML和CSS的基础练习，包括布局、Flexbox使用以及响应式设计适配。要求兼容移动端。', '2026-05-20')">
+                <div class="card-icon">📝</div>
+                <div class="card-info">
+                    <h3>前端开发基础</h3>
+                    <p>截止日期: 2026-05-20</p>
+                </div>
+                <span class="status">进行中</span>
+            </div>
+
+            <!-- 作业卡片 2 -->
+            <div class="card" onclick="openModal('JavaScript 进阶', '实现一个待办事项列表（Todo List），包含添加、删除、标记完成功能，并使用 LocalStorage 保存数据。', '2026-05-25')">
+                <div class="card-icon">💻</div>
+                <div class="card-info">
+                    <h3>JavaScript 进阶</h3>
+                    <p>截止日期: 2026-05-25</p>
+                </div>
+                <span class="status">未开始</span>
+            </div>
+
+            <!-- 作业卡片 3 -->
+            <div class="card" onclick="openModal('UI/UX 设计理论', '阅读《Don\'t Make Me Think》前三章，并撰写一份500字的心得体会，分析现有网站的交互优缺点。', '2026-06-01')">
+                <div class="card-icon">🎨</div>
+                <div class="card-info">
+                    <h3>UI/UX 设计理论</h3>
+                    <p>截止日期: 2026-06-01</p>
+                </div>
+                <span class="status">即将截止</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 弹窗结构 -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="mTitle">标题</h2>
+                <button class="close-btn" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <p id="mDesc">内容...</p>
+                <br>
+                <small style="color: #72757e">截止日期: <span id="mDate"></span></small>
+            </div>
+            <div class="modal-footer">
+                <button class="confirm-btn" onclick="closeModal()">我已知晓</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>© 2026 HAMA L.C.</footer>
+
+    <script>
+        const modal = document.getElementById('detailModal');
+        const mTitle = document.getElementById('mTitle');
+        const mDesc = document.getElementById('mDesc');
+        const mDate = document.getElementById('mDate');
+
+        function openModal(title, desc, date) {
+            mTitle.textContent = title;
+            mDesc.textContent = desc;
+            mDate.textContent = date;
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            modal.classList.remove('active');
+        }
+
+        // 点击遮罩层关闭
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+    </script>
+</body>
+</html>
