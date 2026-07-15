@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📚 作业详情 - 蛤蟆集团</title>
+    <title>📢 集团通知 - 蛤蟆集团</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
             min-height: 100vh;
             font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
@@ -15,152 +16,212 @@
             align-items: center;
             overflow-x: hidden;
             position: relative;
+            color: #fffffe;
         }
+
         /* 背景动态光斑 */
         body::before, body::after {
             content: ''; position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.4; z-index: 0;
         }
         body::before { width: 500px; height: 500px; background: #7f5af0; top: -100px; left: -100px; animation: float1 8s ease-in-out infinite; }
         body::after { width: 400px; height: 400px; background: #2cb67d; bottom: -80px; right: -80px; animation: float2 10s ease-in-out infinite; }
+        
         @keyframes float1 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(80px, 60px); } }
         @keyframes float2 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-60px, -80px); } }
 
-        .container { position: relative; z-index: 1; text-align: center; padding: 40px; max-width: 600px; width: 90%; }
+        .container { 
+            position: relative; z-index: 1; text-align: center; 
+            padding: 40px 20px; max-width: 600px; width: 90%; 
+        }
         
-        /* 返回按钮 */
+        /* 顶部导航 */
+        .header-nav {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 30px;
+        }
         .back-btn {
             display: inline-flex; align-items: center; gap: 8px;
             color: #94a1b2; text-decoration: none; font-size: 0.9rem;
-            margin-bottom: 20px; transition: color 0.3s;
+            transition: color 0.3s; cursor: pointer;
         }
         .back-btn:hover { color: #fffffe; }
 
-        h1 { font-size: 2rem; font-weight: 700; color: #fffffe; margin-bottom: 30px; }
+        h1 { font-size: 2rem; font-weight: 700; margin-bottom: 10px; }
+        .page-desc { color: #94a1b2; font-size: 0.9rem; margin-bottom: 30px; }
 
         .card-grid { display: flex; flex-direction: column; gap: 16px; }
         
+        /* 通知卡片样式 */
         .card {
             display: flex; align-items: center; gap: 16px;
-            padding: 20px 24px;
+            padding: 20px;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 16px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             backdrop-filter: blur(10px);
+            text-align: left;
         }
+        
         .card:hover {
             background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(127, 90, 240, 0.5);
-            transform: translateY(-4px);
-            box-shadow: 0 12px 40px rgba(127, 90, 240, 0.2);
+            border-color: rgba(52, 211, 153, 0.5); /* 绿色高亮边框 */
+            transform: translateY(-4px) scale(1.01);
+            box-shadow: 0 12px 40px rgba(44, 182, 125, 0.15);
         }
 
         .card-icon {
-            width: 48px; height: 48px; border-radius: 12px;
+            width: 50px; height: 50px; border-radius: 14px;
             display: flex; justify-content: center; align-items: center;
             font-size: 24px; flex-shrink: 0;
-            background: linear-gradient(135deg, #e53170, #ff6b6b);
+            /* 蓝色渐变，区别于作业页面的红色 */
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
         }
 
-        .card-info { text-align: left; flex: 1; }
-        .card-info h3 { font-size: 1.1rem; font-weight: 600; color: #fffffe; margin-bottom: 4px; }
-        .card-info p { font-size: 0.85rem; color: #94a1b2; }
-        
-        .status {
-            font-size: 0.75rem; padding: 4px 8px; border-radius: 20px;
-            background: rgba(127, 90, 240, 0.2); color: #a78bfa;
+        .card-content { flex: 1; min-width: 0; }
+        .card-title { 
+            font-size: 1.1rem; font-weight: 600; color: #fffffe; 
+            margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
+        .card-meta { 
+            font-size: 0.8rem; color: #94a1b2; 
+            display: flex; align-items: center; gap: 10px;
+        }
+
+        /* 标签样式 */
+        .badge {
+            font-size: 0.7rem; padding: 2px 8px; border-radius: 12px;
+            font-weight: 600; letter-spacing: 0.5px;
+        }
+        .badge.normal { background: rgba(148, 163, 178, 0.2); color: #cbd5e1; }
+        .badge.urgent { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+        .badge.info { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
 
         /* 弹窗样式 */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px);
-            z-index: 100; display: none; justify-content: center; align-items: center;
+            background: rgba(15, 12, 41, 0.85); backdrop-filter: blur(8px);
+            z-index: 1000; display: none; justify-content: center; align-items: center;
             opacity: 0; transition: opacity 0.3s ease;
         }
         .modal-overlay.active { display: flex; opacity: 1; }
         
-        .modal-content {
-            background: #1a1a2e; border: 1px solid rgba(255,255,255,0.1);
-            width: 90%; max-width: 500px; padding: 30px; border-radius: 20px;
-            transform: scale(0.9); transition: transform 0.3s ease;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        .modal-box {
+            background: #1e1e2f; 
+            border: 1px solid rgba(255,255,255,0.1);
+            width: 90%; max-width: 500px; 
+            border-radius: 24px;
+            transform: scale(0.95) translateY(20px); 
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
         }
-        .modal-overlay.active .modal-content { transform: scale(1); }
+        .modal-overlay.active .modal-box { transform: scale(1) translateY(0); }
 
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .modal-title { font-size: 1.5rem; color: #fffffe; }
+        .modal-header {
+            padding: 24px 24px 0;
+            display: flex; justify-content: space-between; align-items: flex-start;
+        }
+        .modal-title-group h2 { font-size: 1.4rem; color: #fff; margin-bottom: 8px; }
+        .modal-date { font-size: 0.85rem; color: #3b82f6; font-weight: 500; }
+        
         .close-btn {
-            background: none; border: none; color: #94a1b2; font-size: 1.5rem;
-            cursor: pointer; transition: color 0.3s;
+            background: rgba(255,255,255,0.1); border: none; 
+            width: 32px; height: 32px; border-radius: 50%;
+            color: #fff; font-size: 1.2rem; line-height: 1;
+            cursor: pointer; transition: background 0.2s;
+            display: flex; align-items: center; justify-content: center;
         }
-        .close-btn:hover { color: #fff; }
+        .close-btn:hover { background: rgba(255,255,255,0.2); }
 
-        .modal-body { color: #cbd5e1; line-height: 1.6; font-size: 1rem; }
-        .modal-footer { margin-top: 20px; text-align: right; }
-        .confirm-btn {
-            background: linear-gradient(135deg, #7f5af0, #2cb67d);
-            color: white; border: none; padding: 10px 24px; border-radius: 8px;
-            cursor: pointer; font-weight: 600; transition: opacity 0.3s;
+        .modal-body {
+            padding: 24px;
+            color: #cbd5e1; line-height: 1.7; font-size: 1rem;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            margin-top: 20px;
         }
-        .confirm-btn:hover { opacity: 0.9; }
 
-        footer { position: fixed; bottom: 20px; color: #72757e; font-size: 0.8rem; z-index: 1; }
+        footer { 
+            position: fixed; bottom: 20px; 
+            color: #72757e; font-size: 0.8rem; z-index: 1; 
+            width: 100%; text-align: center; pointer-events: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <a href="index.html" class="back-btn">← 返回首页</a>
-        <h1>📚 作业列表</h1>
+        <div class="header-nav">
+            <a href="index.html" class="back-btn">← 返回首页</a>
+        </div>
+        
+        <h1>📢 集团通知</h1>
+        <p class="page-desc">查看最新的集团公告、紧急提醒及活动信息</p>
 
         <div class="card-grid">
-            <!-- 作业卡片 1 -->
-            <div class="card" onclick="openModal('前端开发基础', '完成HTML和CSS的基础练习，包括布局、Flexbox使用以及响应式设计适配。要求兼容移动端。', '2026-05-20')">
-                <div class="card-icon">📝</div>
-                <div class="card-info">
-                    <h3>前端开发基础</h3>
-                    <p>截止日期: 2026-05-20</p>
+            <!-- 通知 1: 紧急 -->
+            <div class="card" onclick="openModal('服务器紧急维护', '由于检测到潜在的安全风险，集团服务器将于今晚 23:00 进行紧急停机维护。预计持续时间为 2 小时。请各位同事提前保存手头工作，避免数据丢失。', '2026-05-18', 'urgent')">
+                <div class="card-icon">🚨</div>
+                <div class="card-content">
+                    <div class="card-title">服务器紧急维护</div>
+                    <div class="card-meta">
+                        <span>2小时前</span>
+                        <span class="badge urgent">紧急</span>
+                    </div>
                 </div>
-                <span class="status">进行中</span>
             </div>
 
-            <!-- 作业卡片 2 -->
-            <div class="card" onclick="openModal('JavaScript 进阶', '实现一个待办事项列表（Todo List），包含添加、删除、标记完成功能，并使用 LocalStorage 保存数据。', '2026-05-25')">
-                <div class="card-icon">💻</div>
-                <div class="card-info">
-                    <h3>JavaScript 进阶</h3>
-                    <p>截止日期: 2026-05-25</p>
+            <!-- 通知 2: 常规 -->
+            <div class="card" onclick="openModal('Q2 季度财报发布', '蛤蟆集团 2026 年第二季度财报已正式发布。整体营收同比增长 15%，主要得益于新产品的市场表现。详细数据请查阅内部邮件。', '2026-05-15', 'normal')">
+                <div class="card-icon">📈</div>
+                <div class="card-content">
+                    <div class="card-title">Q2 季度财报发布</div>
+                    <div class="card-meta">
+                        <span>3天前</span>
+                        <span class="badge normal">常规</span>
+                    </div>
                 </div>
-                <span class="status">未开始</span>
             </div>
 
-            <!-- 作业卡片 3 -->
-            <div class="card" onclick="openModal('UI/UX 设计理论', '阅读《Don\'t Make Me Think》前三章，并撰写一份500字的心得体会，分析现有网站的交互优缺点。', '2026-06-01')">
-                <div class="card-icon">🎨</div>
-                <div class="card-info">
-                    <h3>UI/UX 设计理论</h3>
-                    <p>截止日期: 2026-06-01</p>
+            <!-- 通知 3: 活动 -->
+            <div class="card" onclick="openModal('夏季团建报名开启', '一年一度的夏季团建即将开始！本次地点选在千岛湖度假村，包含皮划艇、烧烤晚会等活动。请于本周五前在 HR 系统完成报名。', '2026-05-10', 'info')">
+                <div class="card-icon">🏖️</div>
+                <div class="card-content">
+                    <div class="card-title">夏季团建报名开启</div>
+                    <div class="card-meta">
+                        <span>1周前</span>
+                        <span class="badge info">活动</span>
+                    </div>
                 </div>
-                <span class="status">即将截止</span>
+            </div>
+            
+             <!-- 通知 4: 常规 -->
+             <div class="card" onclick="openModal('办公室空调清洗通知', '为了大家的健康，行政部将于本周六对全公司空调滤网进行统一清洗消毒。届时办公室将暂停开放，请大家带好个人物品回家办公。', '2026-05-08', 'normal')">
+                <div class="card-icon">❄️</div>
+                <div class="card-content">
+                    <div class="card-title">办公室空调清洗通知</div>
+                    <div class="card-meta">
+                        <span>10天前</span>
+                        <span class="badge normal">行政</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- 弹窗结构 -->
-    <div class="modal-overlay" id="detailModal">
-        <div class="modal-content">
+    <!-- 详情弹窗 -->
+    <div class="modal-overlay" id="noticeModal">
+        <div class="modal-box">
             <div class="modal-header">
-                <h2 class="modal-title" id="mTitle">标题</h2>
+                <div class="modal-title-group">
+                    <h2 id="mTitle">通知标题</h2>
+                    <span class="modal-date" id="mDate">2026-01-01</span>
+                </div>
                 <button class="close-btn" onclick="closeModal()">×</button>
             </div>
-            <div class="modal-body">
-                <p id="mDesc">内容...</p>
-                <br>
-                <small style="color: #72757e">截止日期: <span id="mDate"></span></small>
-            </div>
-            <div class="modal-footer">
-                <button class="confirm-btn" onclick="closeModal()">我已知晓</button>
+            <div class="modal-body" id="mBody">
+                通知内容...
             </div>
         </div>
     </div>
@@ -168,15 +229,23 @@
     <footer>© 2026 HAMA L.C.</footer>
 
     <script>
-        const modal = document.getElementById('detailModal');
+        const modal = document.getElementById('noticeModal');
         const mTitle = document.getElementById('mTitle');
-        const mDesc = document.getElementById('mDesc');
         const mDate = document.getElementById('mDate');
+        const mBody = document.getElementById('mBody');
 
-        function openModal(title, desc, date) {
+        function openModal(title, content, date, type) {
             mTitle.textContent = title;
-            mDesc.textContent = desc;
-            mDate.textContent = date;
+            mDate.textContent = "发布于: " + date;
+            mBody.textContent = content;
+            
+            // 可以根据 type 改变弹窗标题颜色等细节，这里保持简洁
+            if(type === 'urgent') {
+                mTitle.style.color = '#fca5a5';
+            } else {
+                mTitle.style.color = '#fffffe';
+            }
+
             modal.classList.add('active');
         }
 
@@ -188,6 +257,15 @@
         modal.addEventListener('click', (e) => {
             if (e.target === modal) closeModal();
         });
+        
+        // ESC 键关闭
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.classList.contains('active')) {
+                closeModal();
+            }
+        });
     </script>
 </body>
 </html>
+
+
