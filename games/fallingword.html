@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>打字下落游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+        }
+
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            background: linear-gradient(180deg, #0a0a2e 0%, #1a1a4e 100%);
+            border: 2px solid #4a4a8a;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        #score-board {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            justify-content: space-between;
+            color: #aaa;
+            font-size: 16px;
+            z-index: 10;
+        }
+
+        #score-board span {
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        .falling-word {
+            position: absolute;
+            color: #fff;
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+            transition: color 0.1s;
+            user-select: none;
+        }
+
+        .falling-word.active {
+            color: #00ff88;
+            text-shadow: 0 0 20px rgba(0, 255, 136, 0.8);
+        }
+
+        .falling-word .typed {
+            color: #00ff88;
+        }
+
+        .falling-word .untyped {
+            color: #fff;
+        }
+
+        #input-area {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+        }
+
+        #input-area input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #4a4a8a;
+            border-radius: 8px;
+            padding: 10px 20px;
+            color: #fff;
+            font-size: 20px;
+            font-family: 'Courier New', monospace;
+            width: 300px;
+            text-align: center;
+            outline: none;
+        }
+
+        #input-area input:focus {
+            border-color: #00ff88;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+        }
+
+        #game-over {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 100;
+        }
+
+        #game-over h1 {
+            color: #ff4444;
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        #game-over p {
+            color: #aaa;
+            font-size: 24px;
+            margin-bottom: 30px;
+        }
+
+        #game-over button {
+            background: #00ff88;
+            color: #0a0a2e;
+            border: none;
+            padding: 12px 36px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+
+        #game-over button:hover {
+            background: #00cc6a;
+        }
+
+        /* 底部危险线 */
+        #danger-line {
+            position: absolute;
+            bottom: 70px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #ff4444, transparent);
+            opacity: 0.6;
+        }
+
+        /* 爆炸粒子 */
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="score-board">
+            <div>得分: <span id="score">0</span></div>
+            <div>连击: <span id="combo">0</span></div>
+            <div>生命: <span id="lives">5</span></div>
+            <div>等级: <span id="level">1</span></div>
+        </div>
+
+        <div id="danger-line"></div>
+
+        <div id="input-area">
+            <input type="text" id="word-input" placeholder="输入单词..." autocomplete="off">
+        </div>
+
+        <div id="game-over">
+            <h1>GAME OVER</h1>
+            <p>最终得分: <span id="final-score">0</span></p>
+            <button id="restart-btn">重新开始</button>
+        </div>
+    </div>
+
+    <script>
+        // ============ 单词库 ============
+        const WORD_POOL = [
+            // 短单词 (3-4字母) - 下落最快
+            "cat", "dog", "run", "sun", "hat", "box", "cup", "red", "big", "top",
+            "fish", "tree", "blue", "game", "code", "play", "star", "moon", "bird", "wind",
+            // 中等单词 (5-6字母)
+            "apple", "house", "water", "light", "music", "green", "happy", "world", "dream", "brain",
+            "planet", "rocket", "castle", "garden", "bridge", "forest", "silver", "golden", "winter", "summer",
+            // 长单词 (7-8字母)
+            "computer", "keyboard", "elephant", "mountain", "umbrella", "backpack", "dinosaur", "treasure",
+            "adventure", "beautiful", "dangerous", "wonderful",
+            // 超长单词 (9+字母) - 下落最慢
+            "programming", "development", "information", "engineering", "architecture",
+            "extraordinary", "international", "responsibility"
+        ];
+
+        // ============ 游戏配置 ============
+        const CONFIG = {
+            baseSpeed: 120,        // 基础速度（短单词）
+            minSpeed: 30,          // 最低速度（长单词）
+            maxLenRef: 12,         // 参考最大长度
+            spawnInterval: 2000,   // 初始生成间隔（ms）
+            minSpawnInterval: 600, // 最小生成间隔
+            maxLives: 5,           // 初始生命
+            dangerY: 530,          // 危险线Y坐标
+            comboBonus: 5,         // 连击额外得分
+        };
+
+        // ============ 游戏状态 ============
+        let score = 0;
+        let combo = 0;
+        let lives = CONFIG.maxLives;
+        let level = 1;
+        let words = [];
+        let gameRunning = false;
+        let lastTime = 0;
+        let spawnTimer = 0;
+        let activeWord = null; // 当前正在输入的单词
+
+        // ============ DOM 元素 ============
+        const container = document.getElementById('game-container');
+        const input = document.getElementById('word-input');
+        const scoreEl = document.getElementById('score');
+        const comboEl = document.getElementById('combo');
+        const livesEl = document.getElementById('lives');
+        const levelEl = document.getElementById('level');
+        const gameOverEl = document.getElementById('game-over');
+        const finalScoreEl = document.getElementById('final-score');
+        const restartBtn = document.getElementById('restart-btn');
+
+        // ============ 核心：根据单词长度计算下落速度 ============
+        function getFallSpeed(wordLength) {
+            const { baseSpeed, minSpeed, maxLenRef } = CONFIG;
+            const ratio = Math.min(wordLength, maxLenRef) / maxLenRef;
+            // 使用平方曲线，让短词和长词的速度差异更明显
+            const speed = minSpeed + (baseSpeed - minSpeed) * Math.pow(1 - ratio, 2);
+            return speed;
+        }
+
+        // ============ 生成单词 ============
+        function spawnWord() {
+            // 根据等级选择不同难度的单词
+            let pool;
+            if (level <= 2) {
+                pool = WORD_POOL.filter(w => w.length <= 5);
+            } else if (level <= 4) {
+                pool = WORD_POOL.filter(w => w.length <= 7);
+            } else {
+                pool = WORD_POOL;
+            }
+
+            const word = pool[Math.floor(Math.random() * pool.length)];
+            const speed = getFallSpeed(word.length);
+
+            // 计算文本宽度来确保不超出边界
+            const estimatedWidth = word.length * 13;
+            const x = Math.random() * (780 - estimatedWidth);
+
+            const wordObj = {
+                text: word,
+                x: x,
+                y: -30,
+                speed: speed,
+                element: null,
+            };
+
+            // 创建 DOM 元素
+            const el = document.createElement('div');
+            el.className = 'falling-word';
+            el.style.left = x + 'px';
+            el.style.top = wordObj.y + 'px';
+            el.innerHTML = `<span class="untyped">${word}</span>`;
+            container.appendChild(el);
+            wordObj.element = el;
+
+            words.push(wordObj);
+        }
+
+        // ============ 更新单词位置 ============
+        function updateWords(deltaTime) {
+            for (let i = words.length - 1; i >= 0; i--) {
+                const w = words[i];
+                w.y += w.speed * deltaTime;
+                w.element.style.top = w.y + 'px';
+
+                // 超过危险线
+                if (w.y > CONFIG.dangerY) {
+                    removeWord(i);
+                    lives--;
+                    combo = 0;
+                    updateUI();
+
+                    if (lives <= 0) {
+                        endGame();
+                        return;
+                    }
+                }
+            }
+        }
+
+        // ============ 移除单词 ============
+        function removeWord(index) {
+            const w = words[index];
+            if (w.element && w.element.parentNode) {
+                w.element.parentNode.removeChild(w.element);
+            }
+            if (activeWord === w) {
+                activeWord = null;
+            }
+            words.splice(index, 1);
+        }
+
+        // ============ 单词被正确输入 ============
+        function destroyWord(wordObj) {
+            const index = words.indexOf(wordObj);
+            if (index === -1) return;
+
+            // 爆炸粒子效果
+            createExplosion(wordObj.x + wordObj.text.length * 6, wordObj.y);
+
+            // 计分：单词越长得分越高
+            const basePoints = wordObj.text.length * 10;
+            const comboPoints = combo * CONFIG.comboBonus;
+            score += basePoints + comboPoints;
+            combo++;
+
+            // 升级
+            const newLevel = Math.floor(score / 200) + 1;
+            if (newLevel > level) {
+                level = newLevel;
+            }
+
+            removeWord(index);
+            updateUI();
+        }
+
+        // ============ 爆炸粒子效果 ============
+        function createExplosion(x, y) {
+            const colors = ['#00ff88', '#00ccff', '#ffcc00', '#ff6688'];
+            for (let i = 0; i < 8; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = x + 'px';
+                particle.style.top = y + 'px';
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                container.appendChild(particle);
+
+                const angle = (Math.PI * 2 / 8) * i;
+                const distance = 30 + Math.random() * 40;
+                const dx = Math.cos(angle) * distance;
+                const dy = Math.sin(angle) * distance;
+
+                particle.animate([
+                    { transform: 'translate(0, 0)', opacity: 1 },
+                    { transform: `translate(${dx}px, ${dy}px)`, opacity: 0 }
+                ], {
+                    duration: 400,
+                    easing: 'ease-out'
+                }).onfinish = () => particle.remove();
+            }
+        }
+
+        // ============ 更新 UI ============
+        function updateUI() {
+            scoreEl.textContent = score;
+            comboEl.textContent = combo;
+            livesEl.textContent = lives;
+            levelEl.textContent = level;
+        }
+
+        // ============ 输入处理 ============
+        input.addEventListener('input', () => {
+            const typed = input.value.toLowerCase().trim();
+            if (!typed) {
+                // 清空输入时取消激活状态
+                if (activeWord) {
+                    activeWord.element.classList.remove('active');
+                    activeWord.element.innerHTML = `<span class="untyped">${activeWord.text}</span>`;
+                    activeWord = null;
+                }
+                return;
+            }
+
+            // 如果还没有激活单词，尝试匹配
+            if (!activeWord) {
+                // 找到最底部的匹配单词（优先处理紧急的）
+                let best = null;
+                for (const w of words) {
+                    if (w.text.startsWith(typed)) {
+                        if (!best || w.y > best.y) {
+                            best = w;
+                        }
+                    }
+                }
+                if (best) {
+                    activeWord = best;
+                    best.element.classList.add('active');
+                }
+            }
+
+            // 更新高亮显示
+            if (activeWord) {
+                const typed_part = activeWord.text.substring(0, typed.length);
+                const untyped_part = activeWord.text.substring(typed.length);
+                activeWord.element.innerHTML =
+                    `<span class="typed">${typed_part}</span><span class="untyped">${untyped_part}</span>`;
+
+                // 检查是否完全匹配
+                if (typed === activeWord.text) {
+                    destroyWord(activeWord);
+                    input.value = '';
+                }
+                // 如果输入不匹配，重置
+                else if (!activeWord.text.startsWith(typed)) {
+                    activeWord.element.classList.remove('active');
+                    activeWord.element.innerHTML = `<span class="untyped">${activeWord.text}</span>`;
+                    activeWord = null;
+                }
+            }
+        });
+
+        // ============ 游戏主循环 ============
+        function gameLoop(timestamp) {
+            if (!gameRunning) return;
+
+            const deltaTime = lastTime ? (timestamp - lastTime) / 1000 : 0;
+            lastTime = timestamp;
+
+            // 生成新单词
+            spawnTimer += deltaTime * 1000;
+            const currentInterval = Math.max(
+                CONFIG.minSpawnInterval,
+                CONFIG.spawnInterval - level * 150
+            );
+            if (spawnTimer >= currentInterval) {
+                spawnWord();
+                spawnTimer = 0;
+            }
+
+            // 更新所有单词位置
+            updateWords(deltaTime);
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ============ 开始游戏 ============
+        function startGame() {
+            // 清理
+            words.forEach(w => {
+                if (w.element && w.element.parentNode) {
+                    w.element.parentNode.removeChild(w.element);
+                }
+            });
+            words = [];
+            activeWord = null;
+            score = 0;
+            combo = 0;
+            lives = CONFIG.maxLives;
+            level = 1;
+            spawnTimer = 0;
+            lastTime = 0;
+            gameRunning = true;
+
+            input.value = '';
+            gameOverEl.style.display = 'none';
+            updateUI();
+
+            requestAnimationFrame(gameLoop);
+            input.focus();
+        }
+
+        // ============ 结束游戏 ============
+        function endGame() {
+            gameRunning = false;
+            finalScoreEl.textContent = score;
+            gameOverEl.style.display = 'flex';
+        }
+
+        // ============ 事件绑定 ============
+        restartBtn.addEventListener('click', startGame);
+
+        // 点击游戏区域时聚焦输入框
+        container.addEventListener('click', () => {
+            if (gameRunning) input.focus();
+        });
+
+        // 启动游戏
+        startGame();
+    </script>
+</body>
+</html>
