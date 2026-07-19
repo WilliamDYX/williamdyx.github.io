@@ -118,7 +118,6 @@ body {
   display: flex; justify-content: space-between; align-items: center;
 }
 .start-footer span { color: #888; font-size: 11px; cursor: pointer; }
-.start-footer span:hover { color: #ccc; }
 
 /* 搜索面板 */
 #search-panel {
@@ -159,25 +158,9 @@ body {
   text-shadow: 0 1px 3px rgba(0,0,0,0.5); line-height: 1.3;
 }
 
-/* 关机/重启覆盖层 */
-#shutdown-overlay {
-  position: fixed; inset: 0; background: #000; z-index: 99999;
-  display: flex; align-items: center; justify-content: center;
-  flex-direction: column; gap: 20px; color: #fff;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  transition: opacity 0.5s;
-}
-#shutdown-overlay .spin {
-  animation: spin 1s linear infinite;
-}
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
+/* 通用 */
 .hidden { display: none !important; }
 </style>
-<base target="_blank">
 </head>
 <body>
 <div id="desktop">
@@ -201,8 +184,8 @@ body {
     <div class="start-footer">
       <span>Windows 11 Web</span>
       <div style="display:flex;gap:12px;">
-        <span id="btn-shutdown">关机</span>
-        <span id="btn-restart">重启</span>
+        <span onclick="alert('关机模拟')">关机</span>
+        <span onclick="alert('重启模拟')">重启</span>
       </div>
     </div>
   </div>
@@ -290,86 +273,6 @@ body {
     browser: { name: 'Edge', icon: icons.browser },
     terminal: { name: '终端', icon: icons.terminal }
   };
-
-  // ========== 关机/重启系统 ==========
-  function parseShutdownArgs(args) {
-    let mode = 's';
-    let delay = 0;
-    for (let i = 0; i < args.length; i++) {
-      if (args[i] === '-s') mode = 's';
-      else if (args[i] === '-r') mode = 'r';
-      else if (args[i] === '-t' && args[i+1]) {
-        delay = parseInt(args[i+1]) || 0;
-        i++;
-      }
-    }
-    return { mode, delay };
-  }
-
-  function doShutdown(mode, delay, fromCmd) {
-    const action = mode === 'r' ? '重启' : '关机';
-    const overlay = document.createElement('div');
-    overlay.id = 'shutdown-overlay';
-
-    if (delay > 0) {
-      // 倒计时模式
-      overlay.innerHTML = '<div style="font-size:64px;font-weight:300;">' + delay + '</div><div style="font-size:16px;color:#888;">' + action + '倒计时</div>';
-      document.body.appendChild(overlay);
-      let count = delay;
-      const timer = setInterval(() => {
-        count--;
-        if (count > 0) {
-          overlay.querySelector('div').textContent = count;
-        } else {
-          clearInterval(timer);
-          executeShutdown(mode);
-        }
-      }, 1000);
-    } else {
-      executeShutdown(mode);
-    }
-  }
-
-  function executeShutdown(mode) {
-    const isReboot = mode === 'r';
-    let overlay = document.getElementById('shutdown-overlay');
-    if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.id = 'shutdown-overlay';
-      document.body.appendChild(overlay);
-    }
-    overlay.innerHTML = '';
-
-    if (isReboot) {
-      overlay.innerHTML = '<div class="spin" style="font-size:48px;">⟳</div><div style="font-size:18px;">正在重启...</div>';
-      setTimeout(() => {
-        overlay.style.opacity = '0';
-        setTimeout(() => {
-          overlay.remove();
-        }, 500);
-      }, 3000);
-    } else {
-      overlay.innerHTML = '<div style="font-size:48px;">⏻</div><div style="font-size:18px;">正在关机...</div>';
-      const hint = document.createElement('div');
-      hint.style.cssText = 'position:fixed;bottom:40px;left:50%;transform:translateX(-50%);color:#666;font-size:12px;';
-      hint.textContent = '点击屏幕任意位置开机';
-      overlay.appendChild(hint);
-      overlay.addEventListener('click', () => {
-        overlay.style.opacity = '0';
-        setTimeout(() => overlay.remove(), 500);
-      });
-    }
-  }
-
-  // 开始菜单按钮绑定
-  document.getElementById('btn-shutdown').addEventListener('click', () => {
-    closeStart();
-    doShutdown('s', 0);
-  });
-  document.getElementById('btn-restart').addEventListener('click', () => {
-    closeStart();
-    doShutdown('r', 0);
-  });
 
   // 桌面图标
   const desktopAppList = ['pc', 'recycle', 'explorer', 'notepad', 'calc', 'settings', 'browser', 'terminal'];
@@ -601,6 +504,7 @@ body {
         const el = document.createElement('div');
         el.style.cssText = 'width:80px;padding:8px;border-radius:6px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;transition:background 0.15s;';
         el.innerHTML = (item.type === 'folder' ? icons.folder : icons.file) + '<span style="color:#ccc;font-size:10px;text-align:center;word-break:break-all;">' + name + '</span>';
+        // 修复：双击文件时传递当前路径
         el.addEventListener('dblclick', () => {
           if (item.type === 'folder') { closeWindow(winId); openExplorer(name); }
           else { openNotepad(name, item.content, currentPath); }
@@ -639,10 +543,11 @@ body {
     }, 10);
   }
 
-  // 记事本（修复路径）
+  // 记事本 - 修复：增加 path 参数，保存到正确路径
   function openNotepad(filename, content, path) {
     const name = filename || '无标题.txt';
     const text = content || '';
+    // 修复：如果没有传入路径，默认保存到"文档"
     const savePath = path || '文档';
     const html =
       '<div style="display:flex;flex-direction:column;height:100%;">' +
@@ -653,6 +558,7 @@ body {
         '</div>' +
         '<textarea id="np-text" style="flex:1;background:#1e1e1e;color:#d4d4d4;border:none;padding:8px;font-family:monospace;font-size:13px;resize:none;outline:none;line-height:1.5;">' + text + '</textarea>' +
       '</div>';
+    // 修复：标题显示完整路径
     const title = path ? '记事本 - ' + savePath + '/' + name : '记事本 - ' + name;
     const winId = createWindow('notepad', title, html, 520, 360);
     setTimeout(() => {
@@ -663,6 +569,7 @@ body {
         m.addEventListener('click', () => {
           if (m.textContent === '文件') {
             const fs = getFS();
+            // 修复：保存到传入的路径，而不是硬编码的"文档"
             if (!fs[savePath]) fs[savePath] = { type: 'folder', items: {} };
             fs[savePath].items[name] = { type: 'file', content: textarea.value };
             saveFS(fs);
@@ -792,205 +699,45 @@ body {
     createWindow('browser', 'Edge', html, 640, 420);
   }
 
-  // 终端（完整命令集 + shutdown）
+  // 终端
   function openTerminal() {
     const html =
       '<div style="background:#0c0c0c;padding:8px;height:100%;box-sizing:border-box;overflow-y:auto;font-family:monospace;font-size:13px;line-height:1.6;">' +
         '<div id="term-output" style="color:#ccc;">' +
           '<div style="color:#4caf50;">Windows PowerShell</div>' +
           '<div style="color:#4caf50;">版权所有 (C) Microsoft Corporation。保留所有权利。</div>' +
-          '<div style="color:#666;font-size:11px;margin:6px 0;border-left:2px solid #333;padding-left:8px;">' +
-            '命令: help, cls, dir, cd, pwd, mkdir, cat, rm, mv, cp, echo, date, whoami, shutdown' +
-          '</div>' +
+          '<div></div>' +
         '</div>' +
         '<div style="display:flex;align-items:center;gap:4px;">' +
-          '<span id="term-prompt" style="color:#4caf50;">PS C:\Users\User\桌面&gt;</span>' +
+          '<span style="color:#4caf50;">PS C:\\Users\\User&gt;</span>' +
           '<input id="term-input" type="text" style="flex:1;background:transparent;border:none;color:#ccc;font-family:monospace;font-size:13px;outline:none;" autocomplete="off" />' +
         '</div>' +
       '</div>';
-    const winId = createWindow('terminal', 'Windows PowerShell', html, 600, 400);
-
+    const winId = createWindow('terminal', 'Windows PowerShell', html, 560, 340);
     setTimeout(() => {
       const winEl = document.getElementById(winId);
       if (!winEl) return;
       const output = winEl.querySelector('#term-output');
       const input = winEl.querySelector('#term-input');
-      const promptEl = winEl.querySelector('#term-prompt');
-      let cwd = '桌面';
-
-      function log(html) {
-        const div = document.createElement('div');
-        div.style.margin = '2px 0';
-        div.innerHTML = html;
-        output.appendChild(div);
-        winEl.querySelector('.win-content').scrollTop = winEl.querySelector('.win-content').scrollHeight;
-      }
-
-      function updatePrompt() {
-        promptEl.textContent = 'PS C:\Users\User\' + cwd + '>';
-      }
-
-      const commands = {
-        help: () => {
-          return '<div style="color:#90caf9;font-weight:500;">可用命令列表:</div>' +
-            '<div style="color:#ccc;margin-top:6px;display:grid;grid-template-columns:90px 1fr;gap:3px 10px;font-size:12px;">' +
-              '<span style="color:#fbbf24;">help</span><span>显示此帮助信息</span>' +
-              '<span style="color:#fbbf24;">cls</span><span>清屏</span>' +
-              '<span style="color:#fbbf24;">dir</span><span>列出当前目录内容</span>' +
-              '<span style="color:#fbbf24;">cd 目录</span><span>切换目录</span>' +
-              '<span style="color:#fbbf24;">pwd</span><span>显示当前路径</span>' +
-              '<span style="color:#fbbf24;">mkdir 名</span><span>创建文件夹</span>' +
-              '<span style="color:#fbbf24;">cat 文件</span><span>查看文件内容</span>' +
-              '<span style="color:#fbbf24;">rm 文件</span><span>删除文件或文件夹</span>' +
-              '<span style="color:#fbbf24;">mv 旧 新</span><span>移动/重命名</span>' +
-              '<span style="color:#fbbf24;">cp 源 目标</span><span>复制文件</span>' +
-              '<span style="color:#fbbf24;">echo 文本</span><span>输出文本</span>' +
-              '<span style="color:#fbbf24;">date</span><span>显示日期时间</span>' +
-              '<span style="color:#fbbf24;">whoami</span><span>显示当前用户</span>' +
-              '<span style="color:#fbbf24;">shutdown</span><span>关机/重启 (-s/-r -t n)</span>' +
-            '</div>';
-        },
-
-        cls: () => { output.innerHTML = ''; return ''; },
-
-        dir: () => {
-          const fs = getFS();
-          const folder = fs[cwd] || { items: {} };
-          const items = folder.items || {};
-          if (Object.keys(items).length === 0) return '<span style="color:#888;"> 目录为空</span>';
-          let result = '<div style="color:#888;margin-bottom:4px;"> ' + cwd + ' 中的内容:</div>';
-          Object.keys(items).forEach(name => {
-            const item = items[name];
-            const icon = item.type === 'folder' ? '📁' : '📄';
-            const color = item.type === 'folder' ? '#fbbf24' : '#ccc';
-            result += '<div style="color:' + color + ';padding:1px 0;">  ' + icon + ' ' + name + '</div>';
-          });
-          return result;
-        },
-
-        cd: (args) => {
-          if (!args[0]) return '<span style="color:#f44336;">用法: cd 目录名</span>';
-          const target = args[0];
-          if (target === '..') { cwd = '桌面'; updatePrompt(); return '<span style="color:#888;"> 已切换到: 桌面</span>'; }
-          const fs = getFS();
-          if (fs[target] && fs[target].type === 'folder') {
-            cwd = target; updatePrompt();
-            return '<span style="color:#888;"> 已切换到: ' + target + '</span>';
-          }
-          return '<span style="color:#f44336;"> 找不到目录: ' + target + '</span>';
-        },
-
-        pwd: () => '<span style="color:#ccc;"> C:\Users\User\' + cwd + '</span>',
-
-        mkdir: (args) => {
-          if (!args[0]) return '<span style="color:#f44336;">用法: mkdir 文件夹名</span>';
-          const name = args[0];
-          const fs = getFS();
-          if (!fs[cwd]) fs[cwd] = { type: 'folder', items: {} };
-          if (fs[cwd].items[name]) return '<span style="color:#f44336;"> 已存在: ' + name + '</span>';
-          fs[cwd].items[name] = { type: 'folder', items: {} };
-          saveFS(fs);
-          return '<span style="color:#4caf50;"> ✓ 已创建文件夹: ' + name + '</span>';
-        },
-
-        cat: (args) => {
-          if (!args[0]) return '<span style="color:#f44336;">用法: cat 文件名</span>';
-          const name = args[0];
-          const fs = getFS();
-          const folder = fs[cwd] || { items: {} };
-          const item = folder.items[name];
-          if (!item) return '<span style="color:#f44336;"> 找不到文件: ' + name + '</span>';
-          if (item.type === 'folder') return '<span style="color:#f44336;"> ' + name + ' 是文件夹</span>';
-          const content = item.content || '';
-          if (!content) return '<span style="color:#888;"> (空文件)</span>';
-          return '<div style="background:rgba(255,255,255,0.03);padding:6px;border-radius:4px;color:#d4d4d4;white-space:pre-wrap;word-break:break-all;font-size:12px;">' + content.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>';
-        },
-
-        rm: (args) => {
-          if (!args[0]) return '<span style="color:#f44336;">用法: rm 文件名</span>';
-          const name = args[0];
-          const fs = getFS();
-          const folder = fs[cwd] || { items: {} };
-          if (!folder.items[name]) return '<span style="color:#f44336;"> 找不到: ' + name + '</span>';
-          delete folder.items[name];
-          saveFS(fs);
-          return '<span style="color:#4caf50;"> ✓ 已删除: ' + name + '</span>';
-        },
-
-        mv: (args) => {
-          if (args.length < 2) return '<span style="color:#f44336;">用法: mv 源文件 目标文件</span>';
-          const [src, dst] = args;
-          const fs = getFS();
-          const folder = fs[cwd] || { items: {} };
-          if (!folder.items[src]) return '<span style="color:#f44336;"> 找不到: ' + src + '</span>';
-          folder.items[dst] = folder.items[src];
-          delete folder.items[src];
-          saveFS(fs);
-          return '<span style="color:#4caf50;"> ✓ 已重命名: ' + src + ' → ' + dst + '</span>';
-        },
-
-        cp: (args) => {
-          if (args.length < 2) return '<span style="color:#f44336;">用法: cp 源文件 目标文件</span>';
-          const [src, dst] = args;
-          const fs = getFS();
-          const folder = fs[cwd] || { items: {} };
-          if (!folder.items[src]) return '<span style="color:#f44336;"> 找不到: ' + src + '</span>';
-          folder.items[dst] = JSON.parse(JSON.stringify(folder.items[src]));
-          saveFS(fs);
-          return '<span style="color:#4caf50;"> ✓ 已复制: ' + src + ' → ' + dst + '</span>';
-        },
-
-        echo: (args) => '<span style="color:#ccc;"> ' + args.join(' ') + '</span>',
-
-        date: () => '<span style="color:#ccc;"> ' + new Date().toLocaleString('zh-CN') + '</span>',
-
-        whoami: () => '<span style="color:#ccc;"> desktop-user</span>',
-
-        shutdown: (args) => {
-          const { mode, delay } = parseShutdownArgs(args);
-          const action = mode === 'r' ? '重启' : '关机';
-          if (delay > 0) {
-            log('<span style="color:#fbbf24;">⚠ ' + action + '将在 ' + delay + ' 秒后开始...</span>');
-            let count = delay;
-            const timer = setInterval(() => {
-              count--;
-              if (count > 0) {
-                log('<span style="color:#888;">... ' + count + ' 秒</span>');
-              } else {
-                clearInterval(timer);
-                doShutdown(mode, 0, true);
-              }
-            }, 1000);
-            return '';
-          } else {
-            doShutdown(mode, 0, true);
-            return '<span style="color:#f44336;">⚠ 正在' + action + '...</span>';
-          }
-        }
-      };
-
       input.addEventListener('keydown', (e) => {
-        if (e.key !== 'Enter') return;
-        const cmdLine = input.value.trim();
-        if (!cmdLine) return;
-
-        log('<span style="color:#4caf50;">PS C:\Users\User\' + cwd + '&gt;</span> <span style="color:#ccc;">' + cmdLine.replace(/</g, '&lt;') + '</span>');
-
-        const parts = cmdLine.split(/\s+/);
-        const cmd = parts[0].toLowerCase();
-        const args = parts.slice(1);
-
-        const handler = commands[cmd];
-        if (handler) {
-          const result = handler(args);
-          if (result) log(result);
-        } else {
-          log('<span style="color:#f44336;">' + cmd + ' : 无法识别命令。输入 help 查看可用命令。</span>');
+        if (e.key === 'Enter') {
+          const cmd = input.value.trim();
+          const line = document.createElement('div');
+          line.innerHTML = '<span style="color:#4caf50;">PS C:\\Users\\User&gt;</span> <span style="color:#ccc;">' + cmd + '</span>';
+          output.appendChild(line);
+          const res = document.createElement('div');
+          if (cmd === 'help') res.innerHTML = '<span style="color:#ccc;">可用命令: help, cls, dir, echo, date, whoami</span>';
+          else if (cmd === 'cls') output.innerHTML = '';
+          else if (cmd === 'dir') res.innerHTML = '<span style="color:#ccc;">桌面  文档  下载</span>';
+          else if (cmd === 'date') res.innerHTML = '<span style="color:#ccc;">' + new Date().toString() + '</span>';
+          else if (cmd === 'whoami') res.innerHTML = '<span style="color:#ccc;">user</span>';
+          else if (cmd.startsWith('echo ')) res.innerHTML = '<span style="color:#ccc;">' + cmd.slice(5) + '</span>';
+          else if (cmd) res.innerHTML = '<span style="color:#f44336;">' + cmd + ' : 无法识别命令</span>';
+          if (cmd !== 'cls') output.appendChild(res);
+          input.value = '';
+          winEl.querySelector('.win-content').scrollTop = winEl.querySelector('.win-content').scrollHeight;
         }
-
-        input.value = '';
       });
-
       input.focus();
     }, 10);
   }
