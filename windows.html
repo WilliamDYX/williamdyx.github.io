@@ -504,9 +504,10 @@ body {
         const el = document.createElement('div');
         el.style.cssText = 'width:80px;padding:8px;border-radius:6px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;transition:background 0.15s;';
         el.innerHTML = (item.type === 'folder' ? icons.folder : icons.file) + '<span style="color:#ccc;font-size:10px;text-align:center;word-break:break-all;">' + name + '</span>';
+        // 修复：双击文件时传递当前路径
         el.addEventListener('dblclick', () => {
           if (item.type === 'folder') { closeWindow(winId); openExplorer(name); }
-          else { openNotepad(name, item.content); }
+          else { openNotepad(name, item.content, currentPath); }
         });
         container.appendChild(el);
       });
@@ -542,10 +543,12 @@ body {
     }, 10);
   }
 
-  // 记事本
-  function openNotepad(filename, content) {
+  // 记事本 - 修复：增加 path 参数，保存到正确路径
+  function openNotepad(filename, content, path) {
     const name = filename || '无标题.txt';
     const text = content || '';
+    // 修复：如果没有传入路径，默认保存到"文档"
+    const savePath = path || '文档';
     const html =
       '<div style="display:flex;flex-direction:column;height:100%;">' +
         '<div style="padding:4px 8px;background:#2d2d2d;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;gap:12px;">' +
@@ -555,7 +558,9 @@ body {
         '</div>' +
         '<textarea id="np-text" style="flex:1;background:#1e1e1e;color:#d4d4d4;border:none;padding:8px;font-family:monospace;font-size:13px;resize:none;outline:none;line-height:1.5;">' + text + '</textarea>' +
       '</div>';
-    const winId = createWindow('notepad', '记事本 - ' + name, html, 520, 360);
+    // 修复：标题显示完整路径
+    const title = path ? '记事本 - ' + savePath + '/' + name : '记事本 - ' + name;
+    const winId = createWindow('notepad', title, html, 520, 360);
     setTimeout(() => {
       const winEl = document.getElementById(winId);
       if (!winEl) return;
@@ -564,10 +569,11 @@ body {
         m.addEventListener('click', () => {
           if (m.textContent === '文件') {
             const fs = getFS();
-            if (!fs['文档']) fs['文档'] = { type: 'folder', items: {} };
-            fs['文档'].items[name] = { type: 'file', content: textarea.value };
+            // 修复：保存到传入的路径，而不是硬编码的"文档"
+            if (!fs[savePath]) fs[savePath] = { type: 'folder', items: {} };
+            fs[savePath].items[name] = { type: 'file', content: textarea.value };
             saveFS(fs);
-            alert('已保存到 文档/' + name);
+            alert('已保存到 ' + savePath + '/' + name);
           }
         });
       });
