@@ -335,16 +335,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 500);
       }, 2500);
     } else {
-      overlay.innerHTML = '<div style="font-size:48px;">⏻</div><div style="font-size:18px;margin-top:12px;">正在关机...</div><div style="position:fixed;bottom:60px;left:50%;transform:translateX(-50%);color:#666;font-size:12px;">点击屏幕任意位置开机</div>';
+      overlay.innerHTML = '<div style="font-size:48px;">⏻</div><div style="font-size:18px;margin-top:12px;">正在关机...</div>';
       document.body.appendChild(overlay);
-      overlay.addEventListener('click', function(e) {
-        e.stopPropagation();
-        overlay.classList.add('fade-out');
-        setTimeout(function() {
-          overlay.remove();
-          document.getElementById('desktop').style.pointerEvents = 'auto';
-        }, 500);
-      });
+      setTimeout(function() {
+        window.location.href = 'off.html';
+      }, 2000);
     }
   }
 
