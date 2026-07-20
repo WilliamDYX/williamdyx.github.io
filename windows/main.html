@@ -337,9 +337,7 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
       overlay.innerHTML = '<div style="font-size:48px;">⏻</div><div style="font-size:18px;margin-top:12px;">正在关机...</div>';
       document.body.appendChild(overlay);
-      setTimeout(function() {
-        window.location.href = 'off.html';
-      }, 2000);
+      window.location.href = 'off.html';
     }
   }
 
